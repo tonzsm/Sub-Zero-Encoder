@@ -6,7 +6,6 @@ Sub-Zero Encoder is a user-friendly graphical interface for FFmpeg, designed to 
 
 https://github.com/tonzsm/Sub-Zero-Encoder/blob/main/Sub-Zero-Encoder-GUI.png 
 ![Screenshot of a GUI Version](https://github.com/tonzsm/Sub-Zero-Encoder/blob/main/Sub-Zero-Encoder-GUI.png)
-*(Optional: Add a screenshot of your application here)*
 
 ---
 

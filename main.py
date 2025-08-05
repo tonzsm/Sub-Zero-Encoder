@@ -8,12 +8,25 @@ import time
 from tkinterdnd2 import DND_FILES, TkinterDnD
 import ffmpeg
 import shutil
+import sys # <--- (v34) เพิ่มเข้ามา
+
+# --- (v34) ฟังก์ชันผู้ช่วยสำหรับหา Path ของไฟล์ไม่ว่าจะรันในโหมดไหน ---
+def get_resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+# --------------------------------------------------------------------
 
 class FFmpegGUI:
     def __init__(self, master: TkinterDnD.Tk):
         self.master = master
-        master.title("✨ Subtitle Embedder v33 (Resolution Scaling) ✨")
-        master.geometry("740x750") # เพิ่มความสูงเล็กน้อยสำหรับ Scaling
+        master.title("✨ Subtitle Embedder v34 (Standalone Ready) ✨")
+        master.geometry("740x750")
 
         self.last_output_folder = None
         self.video_duration = 0.0
@@ -40,11 +53,8 @@ class FFmpegGUI:
         self.end_time_var = tk.StringVar(value="")
         self.output_dir_mode = tk.StringVar(value="same")
         self.custom_output_dir = tk.StringVar()
-
-        # --- (v33) เพิ่ม GUI Variables สำหรับ Scaling ---
         self.scale_var = tk.BooleanVar(value=False)
         self.resolution_var = tk.StringVar(value="Keep Original")
-        # Dictionary สำหรับแปลงชื่อที่จำง่ายไปเป็นค่าของ FFmpeg
         self.resolutions = {
             "Keep Original": None,
             "2160p (4K UHD)": "-1:2160",
@@ -59,57 +69,21 @@ class FFmpegGUI:
         self.create_widgets()
         self.update_codec_options()
         self.toggle_output_widgets()
-        self.toggle_scale_widgets() # ตั้งค่าเริ่มต้น
+        self.toggle_scale_widgets()
 
-    def create_widgets(self):
-        main_frame = ttk.Frame(self.master, padding="10"); main_frame.pack(fill=tk.BOTH, expand=True)
-        
-        # ... File, Output Frames ...
-        file_frame = ttk.LabelFrame(main_frame, text="📁 File Selection", padding="10"); file_frame.grid(row=0, column=0, columnspan=2, sticky=tk.EW, pady=5); file_frame.columnconfigure(1, weight=1)
-        ttk.Label(file_frame, text="Video File:").grid(row=0, column=0, sticky=tk.W); video_entry = ttk.Entry(file_frame, textvariable=self.video_path, state="readonly"); video_entry.grid(row=0, column=1, sticky=tk.EW, padx=5); ttk.Button(file_frame, text="Browse...", command=self.select_video).grid(row=0, column=2)
-        ttk.Label(file_frame, text="Subtitle File (.ass, .srt):").grid(row=1, column=0, sticky=tk.W); subtitle_entry = ttk.Entry(file_frame, textvariable=self.subtitle_path, state="readonly"); subtitle_entry.grid(row=1, column=1, sticky=tk.EW, padx=5); ttk.Button(file_frame, text="Browse...", command=self.select_subtitle).grid(row=1, column=2)
-        video_entry.drop_target_register(DND_FILES); video_entry.dnd_bind('<<Drop>>', lambda e: self.handle_drop(e, self.video_path)); subtitle_entry.drop_target_register(DND_FILES); subtitle_entry.dnd_bind('<<Drop>>', lambda e: self.handle_drop(e, self.subtitle_path))
-        
-        output_frame = ttk.LabelFrame(main_frame, text="📂 Output Settings", padding="10"); output_frame.grid(row=1, column=0, columnspan=2, sticky=tk.EW, pady=5); output_frame.columnconfigure(1, weight=1)
-        ttk.Radiobutton(output_frame, text="Save in the same folder as input", variable=self.output_dir_mode, value="same", command=self.toggle_output_widgets).grid(row=0, column=0, columnspan=2, sticky=tk.W)
-        ttk.Radiobutton(output_frame, text="Save to a custom folder:", variable=self.output_dir_mode, value="custom", command=self.toggle_output_widgets).grid(row=1, column=0, sticky=tk.W)
-        self.output_dir_entry = ttk.Entry(output_frame, textvariable=self.custom_output_dir, state=tk.DISABLED); self.output_dir_entry.grid(row=1, column=1, sticky=tk.EW, padx=5)
-        self.output_dir_button = ttk.Button(output_frame, text="Browse...", command=self.select_output_dir, state=tk.DISABLED); self.output_dir_button.grid(row=1, column=2)
+    def check_ffmpeg_installed(self):
+        """(v34) แก้ไขให้หา FFmpeg จากโฟลเดอร์ bin ที่มาด้วยกัน"""
+        self.ffmpeg_path = get_resource_path(os.path.join("bin", "ffmpeg.exe"))
+        self.ffprobe_path = get_resource_path(os.path.join("bin", "ffprobe.exe"))
 
-        config_frame = ttk.LabelFrame(main_frame, text="⚙️ Encoding Configuration", padding="10"); config_frame.grid(row=2, column=0, columnspan=2, sticky=tk.EW, pady=5); config_frame.columnconfigure(1, weight=1)
-        gpu_check = ttk.Checkbutton(config_frame, text="Use GPU Acceleration (Recommended)", variable=self.use_gpu_var,command=self.update_codec_options); gpu_check.grid(row=0, column=0, columnspan=3, sticky=tk.W)
-        ttk.Label(config_frame, text="Detected Video:").grid(row=1, column=0, sticky=tk.W, pady=(5,0)); ttk.Label(config_frame, textvariable=self.detected_bitrate_str).grid(row=1, column=1, columnspan=2, sticky=tk.W, pady=(5,0))
-        ttk.Label(config_frame, text="Detected Audio:").grid(row=2, column=0, sticky=tk.W); ttk.Label(config_frame, textvariable=self.detected_audio_str).grid(row=2, column=1, columnspan=2, sticky=tk.W)
-        
-        # --- (v33) เพิ่ม UI สำหรับ Scaling ---
-        scale_check = ttk.Checkbutton(config_frame, text="Enable Resolution Scaling", variable=self.scale_var, command=self.toggle_scale_widgets); scale_check.grid(row=3, column=0, sticky=tk.W, pady=(5,0))
-        self.resolution_combo = ttk.Combobox(config_frame, textvariable=self.resolution_var, values=list(self.resolutions.keys()), state="readonly"); self.resolution_combo.grid(row=3, column=1, columnspan=2, sticky=tk.EW, pady=(5,0))
-        # ------------------------------------
-
-        ttk.Label(config_frame, text="Output Video Bitrate:").grid(row=4, column=0, sticky=tk.W, pady=(5,0)); ttk.Entry(config_frame, textvariable=self.output_bitrate).grid(row=4, column=1, columnspan=2, sticky=tk.EW, pady=(5,0))
-        ttk.Label(config_frame, text="Video Codec:").grid(row=5, column=0, sticky=tk.W, pady=(5,0)); self.codec_combo = ttk.Combobox(config_frame, textvariable=self.codec_var, state="readonly"); self.codec_combo.grid(row=5, column=1, columnspan=2, sticky=tk.EW, pady=(5,0))
-        ttk.Label(config_frame, text="Preset:").grid(row=6, column=0, sticky=tk.W, pady=(5,0)); self.preset_combo = ttk.Combobox(config_frame, textvariable=self.preset_var, state="readonly"); self.preset_combo.grid(row=6, column=1, columnspan=2, sticky=tk.EW, pady=(5,0))
-        ttk.Label(config_frame, text="Audio Codec:").grid(row=7, column=0, sticky=tk.W, pady=(5,0))
-        self.audio_codec_combo = ttk.Combobox(config_frame, textvariable=self.audio_codec_var, values=['copy', 'aac', 'ac3'], state="readonly"); self.audio_codec_combo.grid(row=7, column=1, sticky=tk.EW, pady=(5,0), padx=(0,5))
-        self.audio_bitrate_entry = ttk.Combobox(config_frame, textvariable=self.audio_bitrate_var, width=8, values=['128k', '192k', '256k', '320k']); self.audio_bitrate_entry.grid(row=7, column=2, sticky=tk.W, pady=(5,0))
-
-        # ... Trim, Action, Progress frames (เหมือนเดิม) ...
-        trim_frame = ttk.LabelFrame(main_frame, text="✂️ Time Trimming", padding="10"); trim_frame.grid(row=3, column=0, columnspan=2, sticky=tk.EW, pady=5); trim_frame.columnconfigure(1, weight=1)
-        trim_check = ttk.Checkbutton(trim_frame, text="Enable Trimming", variable=self.trim_var, command=self.toggle_trim_widgets); trim_check.grid(row=0, column=0, columnspan=2, sticky=tk.W)
-        ttk.Label(trim_frame, text="Start Time (HH:MM:SS):").grid(row=1, column=0, sticky=tk.W, padx=5); self.start_entry = ttk.Entry(trim_frame, textvariable=self.start_time_var); self.start_entry.grid(row=1, column=1, sticky=tk.EW, padx=5)
-        ttk.Label(trim_frame, text="End Time (HH:MM:SS):").grid(row=2, column=0, sticky=tk.W, padx=5); self.end_entry = ttk.Entry(trim_frame, textvariable=self.end_time_var); self.end_entry.grid(row=2, column=1, sticky=tk.EW, padx=5); self.toggle_trim_widgets()
-        action_frame = ttk.Frame(main_frame); action_frame.grid(row=4, column=0, columnspan=2, sticky=tk.EW, pady=5)
-        self.embed_button = ttk.Button(action_frame, text="🚀 Start", command=self.start_embedding_thread); self.embed_button.grid(row=0, column=0, sticky=tk.EW, padx=(0, 5))
-        self.stop_button = ttk.Button(action_frame, text="🛑 Stop", command=self.stop_process, state=tk.DISABLED); self.stop_button.grid(row=0, column=1, sticky=tk.EW, padx=(5, 5))
-        self.log_button = ttk.Button(action_frame, text="Show Log", command=self.toggle_log_window); self.log_button.grid(row=0, column=2, sticky=tk.EW, padx=(5, 5))
-        self.open_folder_button = ttk.Button(action_frame, text="📂 Open Folder", command=self.open_output_folder, state=tk.DISABLED); self.open_folder_button.grid(row=0, column=3, sticky=tk.EW, padx=(5, 0))
-        action_frame.columnconfigure(0, weight=1); action_frame.columnconfigure(1, weight=1); action_frame.columnconfigure(2, weight=1); action_frame.columnconfigure(3, weight=1)
-        progress_frame = ttk.Frame(main_frame); progress_frame.grid(row=5, column=0, columnspan=2, sticky=tk.EW, pady=10)
-        self.progress_bar = ttk.Progressbar(progress_frame, variable=self.progress_var, maximum=100); self.progress_bar.pack(side=tk.LEFT, fill=tk.X, expand=True)
-        self.progress_label = ttk.Label(progress_frame, textvariable=self.progress_text); self.progress_label.pack(side=tk.RIGHT, padx=5)
-        status_bar = ttk.Label(self.master, textvariable=self.status_text, relief=tk.SUNKEN, anchor=tk.W, padding=5); status_bar.pack(side=tk.BOTTOM, fill=tk.X)
-        main_frame.columnconfigure(0, weight=1)
-        self.log_window = None
+        if not os.path.exists(self.ffmpeg_path) or not os.path.exists(self.ffprobe_path):
+            self.master.after(100, self._show_ffmpeg_error_and_quit)
+            return False
+        return True
+    
+    def _show_ffmpeg_error_and_quit(self):
+        messagebox.showerror("Error", "ffmpeg.exe or ffprobe.exe not found in 'bin' folder!")
+        self.master.destroy()
 
     def run_ffmpeg_process(self):
         if not self.video_path.get() or not self.subtitle_path.get() or not self.output_bitrate.get(): self.queue.put("__ERROR__:Missing input file, subtitle file, or bitrate."); return
@@ -119,19 +93,16 @@ class FFmpegGUI:
         else: video_out = os.path.join(os.path.dirname(video_in), output_filename)
         video_out = os.path.normpath(video_out)
         self.last_output_folder = os.path.dirname(video_out)
-        command_parts = ["ffmpeg", "-hide_banner", "-nostats"]
+        
+        # --- (v34) แก้ไขให้ใช้ Path ของ FFmpeg ที่ถูกต้อง ---
+        command_parts = [self.ffmpeg_path, "-hide_banner", "-nostats"]
         if self.use_gpu_var.get(): command_parts.extend(["-hwaccel", "cuda"])
         command_parts.extend(['-i', video_in])
         
         video_filter_chain = []
-        
-        # --- (v33) เพิ่มฟิลเตอร์ Scaling ก่อนฟิลเตอร์อื่น ---
         if self.scale_var.get():
-            selected_res = self.resolution_var.get()
-            scale_value = self.resolutions.get(selected_res)
-            if scale_value:
-                video_filter_chain.append(f"scale={scale_value}")
-        # -----------------------------------------------
+            scale_value = self.resolutions.get(self.resolution_var.get())
+            if scale_value: video_filter_chain.append(f"scale={scale_value}")
 
         subtitle_path_escaped = subtitle_in.replace('\\', '\\\\').replace(':', '\\:'); _, sub_ext = os.path.splitext(subtitle_in)
         if sub_ext.lower() == '.ass': video_filter_chain.append(f"ass=filename='{subtitle_path_escaped}'")
@@ -140,7 +111,7 @@ class FFmpegGUI:
         
         audio_codec_parts = []; selected_audio_codec = self.audio_codec_var.get()
         if self.trim_var.get():
-            if selected_audio_codec == 'copy': messagebox.showwarning("Audio Codec Warning", "Audio cannot be copied when trimming. Falling back to 'aac' codec."); selected_audio_codec = 'aac'; self.audio_codec_var.set('aac')
+            if selected_audio_codec == 'copy': messagebox.showwarning("Audio Codec Warning", "Cannot copy audio when trimming. Falling back to 'aac'."); selected_audio_codec = 'aac'; self.audio_codec_var.set('aac')
             start_time_str = self.start_time_var.get(); end_time_str = self.end_time_var.get(); trim_options = []
             if start_time_str and self.time_to_seconds(start_time_str) is not None: trim_options.append(f"start={self.time_to_seconds(start_time_str)}")
             if end_time_str and self.time_to_seconds(end_time_str) is not None: trim_options.append(f"end={self.time_to_seconds(end_time_str)}")
@@ -160,18 +131,14 @@ class FFmpegGUI:
             threading.Thread(target=self.stream_log_reader, args=(self.ffmpeg_process.stderr,), daemon=True).start(); threading.Thread(target=self.monitor_progress, daemon=True).start()
         except Exception as e: self.queue.put(f"__ERROR__:A Python error occurred:\n{e}")
 
-    # ... (โค้ดที่เหลือเหมือนเดิมทั้งหมด) ...
-    def toggle_scale_widgets(self):
-        """(v33) เปิด/ปิด Combobox สำหรับเลือกความละเอียด"""
-        state = "readonly" if self.scale_var.get() else tk.DISABLED
-        self.resolution_combo.config(state=state)
-        
     def get_video_info(self):
         video_file = self.video_path.get()
         if not video_file: return
         self.status_text.set("🔍 Status: Analyzing video..."); self.master.update_idletasks()
         try:
-            probe = ffmpeg.probe(video_file, cmd='ffprobe'); format_info = probe['format']
+            # --- (v34) แก้ไขให้ใช้ Path ของ FFprobe ที่ถูกต้อง ---
+            probe = ffmpeg.probe(video_file, cmd=self.ffprobe_path)
+            format_info = probe['format']
             if 'bit_rate' in format_info: bitrate_bps = int(format_info['bit_rate']); self.output_bitrate.set(f"{round(bitrate_bps / 1000 / 1000)}M"); self.detected_bitrate_str.set(f"{bitrate_bps / 1000:.0f} kbps ({bitrate_bps / 1000 / 1000:.2f} Mbps)")
             else: self.detected_bitrate_str.set("N/A"); self.output_bitrate.set("15M")
             self.video_duration = float(format_info.get('duration', 0.0))
@@ -193,19 +160,56 @@ class FFmpegGUI:
             else: self.detected_audio_str.set("No audio stream found")
             self.status_text.set("✅ Status: Ready")
         except Exception as e: self.status_text.set(f"❌ Status: Error analyzing video"); messagebox.showerror("Analysis Error", f"Could not analyze video:\n\n{e}"); self.detected_audio_str.set("N/A")
+
+    # ... (โค้ดที่เหลือทั้งหมดเหมือนกับ v33 ทุกประการ) ...
+    def create_widgets(self):
+        main_frame = ttk.Frame(self.master, padding="10"); main_frame.pack(fill=tk.BOTH, expand=True)
+        file_frame = ttk.LabelFrame(main_frame, text="📁 File Selection", padding="10"); file_frame.grid(row=0, column=0, columnspan=2, sticky=tk.EW, pady=5); file_frame.columnconfigure(1, weight=1)
+        ttk.Label(file_frame, text="Video File:").grid(row=0, column=0, sticky=tk.W); video_entry = ttk.Entry(file_frame, textvariable=self.video_path, state="readonly"); video_entry.grid(row=0, column=1, sticky=tk.EW, padx=5); ttk.Button(file_frame, text="Browse...", command=self.select_video).grid(row=0, column=2)
+        ttk.Label(file_frame, text="Subtitle File (.ass, .srt):").grid(row=1, column=0, sticky=tk.W); subtitle_entry = ttk.Entry(file_frame, textvariable=self.subtitle_path, state="readonly"); subtitle_entry.grid(row=1, column=1, sticky=tk.EW, padx=5); ttk.Button(file_frame, text="Browse...", command=self.select_subtitle).grid(row=1, column=2)
+        video_entry.drop_target_register(DND_FILES); video_entry.dnd_bind('<<Drop>>', lambda e: self.handle_drop(e, self.video_path)); subtitle_entry.drop_target_register(DND_FILES); subtitle_entry.dnd_bind('<<Drop>>', lambda e: self.handle_drop(e, self.subtitle_path))
+        output_frame = ttk.LabelFrame(main_frame, text="📂 Output Settings", padding="10"); output_frame.grid(row=1, column=0, columnspan=2, sticky=tk.EW, pady=5); output_frame.columnconfigure(1, weight=1)
+        ttk.Radiobutton(output_frame, text="Save in the same folder as input", variable=self.output_dir_mode, value="same", command=self.toggle_output_widgets).grid(row=0, column=0, columnspan=2, sticky=tk.W)
+        ttk.Radiobutton(output_frame, text="Save to a custom folder:", variable=self.output_dir_mode, value="custom", command=self.toggle_output_widgets).grid(row=1, column=0, sticky=tk.W)
+        self.output_dir_entry = ttk.Entry(output_frame, textvariable=self.custom_output_dir, state=tk.DISABLED); self.output_dir_entry.grid(row=1, column=1, sticky=tk.EW, padx=5)
+        self.output_dir_button = ttk.Button(output_frame, text="Browse...", command=self.select_output_dir, state=tk.DISABLED); self.output_dir_button.grid(row=1, column=2)
+        config_frame = ttk.LabelFrame(main_frame, text="⚙️ Encoding Configuration", padding="10"); config_frame.grid(row=2, column=0, columnspan=2, sticky=tk.EW, pady=5); config_frame.columnconfigure(1, weight=1)
+        gpu_check = ttk.Checkbutton(config_frame, text="Use GPU Acceleration (Recommended)", variable=self.use_gpu_var,command=self.update_codec_options); gpu_check.grid(row=0, column=0, columnspan=3, sticky=tk.W)
+        ttk.Label(config_frame, text="Detected Video:").grid(row=1, column=0, sticky=tk.W, pady=(5,0)); ttk.Label(config_frame, textvariable=self.detected_bitrate_str).grid(row=1, column=1, columnspan=2, sticky=tk.W, pady=(5,0))
+        ttk.Label(config_frame, text="Detected Audio:").grid(row=2, column=0, sticky=tk.W); ttk.Label(config_frame, textvariable=self.detected_audio_str).grid(row=2, column=1, columnspan=2, sticky=tk.W)
+        scale_check = ttk.Checkbutton(config_frame, text="Enable Resolution Scaling", variable=self.scale_var, command=self.toggle_scale_widgets); scale_check.grid(row=3, column=0, sticky=tk.W, pady=(5,0))
+        self.resolution_combo = ttk.Combobox(config_frame, textvariable=self.resolution_var, values=list(self.resolutions.keys()), state="readonly"); self.resolution_combo.grid(row=3, column=1, columnspan=2, sticky=tk.EW, pady=(5,0))
+        ttk.Label(config_frame, text="Output Video Bitrate:").grid(row=4, column=0, sticky=tk.W, pady=(5,0)); ttk.Entry(config_frame, textvariable=self.output_bitrate).grid(row=4, column=1, columnspan=2, sticky=tk.EW, pady=(5,0))
+        ttk.Label(config_frame, text="Video Codec:").grid(row=5, column=0, sticky=tk.W, pady=(5,0)); self.codec_combo = ttk.Combobox(config_frame, textvariable=self.codec_var, state="readonly"); self.codec_combo.grid(row=5, column=1, columnspan=2, sticky=tk.EW, pady=(5,0))
+        ttk.Label(config_frame, text="Preset:").grid(row=6, column=0, sticky=tk.W, pady=(5,0)); self.preset_combo = ttk.Combobox(config_frame, textvariable=self.preset_var, state="readonly"); self.preset_combo.grid(row=6, column=1, columnspan=2, sticky=tk.EW, pady=(5,0))
+        ttk.Label(config_frame, text="Audio Codec:").grid(row=7, column=0, sticky=tk.W, pady=(5,0))
+        self.audio_codec_combo = ttk.Combobox(config_frame, textvariable=self.audio_codec_var, values=['copy', 'aac', 'ac3'], state="readonly"); self.audio_codec_combo.grid(row=7, column=1, sticky=tk.EW, pady=(5,0), padx=(0,5))
+        self.audio_bitrate_entry = ttk.Combobox(config_frame, textvariable=self.audio_bitrate_var, width=8, values=['128k', '192k', '256k', '320k']); self.audio_bitrate_entry.grid(row=7, column=2, sticky=tk.W, pady=(5,0))
+        trim_frame = ttk.LabelFrame(main_frame, text="✂️ Time Trimming", padding="10"); trim_frame.grid(row=3, column=0, columnspan=2, sticky=tk.EW, pady=5); trim_frame.columnconfigure(1, weight=1)
+        trim_check = ttk.Checkbutton(trim_frame, text="Enable Trimming", variable=self.trim_var, command=self.toggle_trim_widgets); trim_check.grid(row=0, column=0, columnspan=2, sticky=tk.W)
+        ttk.Label(trim_frame, text="Start Time (HH:MM:SS):").grid(row=1, column=0, sticky=tk.W, padx=5); self.start_entry = ttk.Entry(trim_frame, textvariable=self.start_time_var); self.start_entry.grid(row=1, column=1, sticky=tk.EW, padx=5)
+        ttk.Label(trim_frame, text="End Time (HH:MM:SS):").grid(row=2, column=0, sticky=tk.W, padx=5); self.end_entry = ttk.Entry(trim_frame, textvariable=self.end_time_var); self.end_entry.grid(row=2, column=1, sticky=tk.EW, padx=5); self.toggle_trim_widgets()
+        action_frame = ttk.Frame(main_frame); action_frame.grid(row=4, column=0, columnspan=2, sticky=tk.EW, pady=5)
+        self.embed_button = ttk.Button(action_frame, text="🚀 Start", command=self.start_embedding_thread); self.embed_button.grid(row=0, column=0, sticky=tk.EW, padx=(0, 5))
+        self.stop_button = ttk.Button(action_frame, text="🛑 Stop", command=self.stop_process, state=tk.DISABLED); self.stop_button.grid(row=0, column=1, sticky=tk.EW, padx=(5, 5))
+        self.log_button = ttk.Button(action_frame, text="Show Log", command=self.toggle_log_window); self.log_button.grid(row=0, column=2, sticky=tk.EW, padx=(5, 5))
+        self.open_folder_button = ttk.Button(action_frame, text="📂 Open Folder", command=self.open_output_folder, state=tk.DISABLED); self.open_folder_button.grid(row=0, column=3, sticky=tk.EW, padx=(5, 0))
+        action_frame.columnconfigure(0, weight=1); action_frame.columnconfigure(1, weight=1); action_frame.columnconfigure(2, weight=1); action_frame.columnconfigure(3, weight=1)
+        progress_frame = ttk.Frame(main_frame); progress_frame.grid(row=5, column=0, columnspan=2, sticky=tk.EW, pady=10)
+        self.progress_bar = ttk.Progressbar(progress_frame, variable=self.progress_var, maximum=100); self.progress_bar.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.progress_label = ttk.Label(progress_frame, textvariable=self.progress_text); self.progress_label.pack(side=tk.RIGHT, padx=5)
+        status_bar = ttk.Label(self.master, textvariable=self.status_text, relief=tk.SUNKEN, anchor=tk.W, padding=5); status_bar.pack(side=tk.BOTTOM, fill=tk.X)
+        main_frame.columnconfigure(0, weight=1); self.log_window = None
+    def toggle_scale_widgets(self): state = "readonly" if self.scale_var.get() else tk.DISABLED; self.resolution_combo.config(state=state)
     def open_output_folder(self):
         if self.last_output_folder and os.path.exists(self.last_output_folder): os.startfile(self.last_output_folder)
-        else: messagebox.showwarning("Open Folder", "Output folder not found or process has not been run yet.")
+        else: messagebox.showwarning("Open Folder", "Output folder not found.")
     def toggle_trim_widgets(self):
         is_trimming = self.trim_var.get(); state = tk.NORMAL if is_trimming else tk.DISABLED
         self.start_entry.config(state=state); self.end_entry.config(state=state)
         if is_trimming and self.audio_codec_var.get() == 'copy': self.audio_codec_var.set('aac')
         elif not is_trimming: self.audio_codec_var.set('copy')
     def toggle_output_widgets(self): state = tk.NORMAL if self.output_dir_mode.get() == "custom" else tk.DISABLED; self.output_dir_entry.config(state=state); self.output_dir_button.config(state=state)
-    def check_ffmpeg_installed(self):
-        if not shutil.which("ffmpeg") or not shutil.which("ffprobe"): self.master.after(100, self._show_ffmpeg_error_and_quit); return False
-        return True
-    def _show_ffmpeg_error_and_quit(self): messagebox.showerror("Error", "FFmpeg/ffprobe not found."); self.master.destroy()
     def time_to_seconds(self, time_str):
         try:
             parts = str(time_str).split(':'); s=0

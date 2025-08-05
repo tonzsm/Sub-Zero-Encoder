@@ -5,6 +5,7 @@
 Sub-Zero Encoder is a user-friendly graphical interface for FFmpeg, designed to make hardsubbing subtitles a simple and powerful experience. Whether you're a professional subtitler or a hobbyist, this tool streamlines the entire process of embedding, trimming, and encoding your videos with pixel-perfect subtitles.
 
 https://github.com/tonzsm/Sub-Zero-Encoder/blob/main/Sub-Zero-Encoder-GUI.png 
+![Screenshot of a GUI Version](https://github.com/tonzsm/Sub-Zero-Encoder/blob/main/Sub-Zero-Encoder-GUI.png)
 *(Optional: Add a screenshot of your application here)*
 
 ---

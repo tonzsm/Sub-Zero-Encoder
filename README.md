@@ -19,19 +19,15 @@
 
 Sub-Zero Encoder is packed with features designed to make your workflow as smooth as possible.
 
-*   **Intuitive UI:** A clean and simple graphical user interface.
-*   **Drag & Drop:** Full drag and drop support for both video and subtitle files.
+*   **Smart GPU Acceleration:** Automatically detects **NVIDIA (NVENC)**, **AMD (AMF)**, and **Intel (QSV)** GPUs to provide the best possible hardware acceleration without any configuration.
+*   **Intuitive UI:** A clean and simple graphical user interface with Drag & Drop support.
 *   **Auto-Subtitle Finder:** Automatically detects and loads matching `.ass` or `.srt` subtitle files.
-*   **GPU Acceleration:** Utilizes NVIDIA NVENC for blazing-fast encoding speeds.
-*   **Standalone & Portable:** Comes bundled with FFmpeg. No external dependencies or installation required. Just extract and run!
-*   **Resolution Scaling:** Easily downscale your videos to standard resolutions like 1080p or 720p.
-*   **Stable Time Trimming:** Encode only the specific segments you need. The output is **guaranteed** to have perfect audio and subtitle synchronization.
-*   **Live Pre-computation:**
-    *   **ETA:** Displays the estimated time remaining during the encoding process.
-    *   **Estimated File Size:** See the final output file size in real-time as you adjust your settings.
-*   **Convenient Output Handling:**
-    *   **Open Folder:** Instantly opens the destination folder.
-    *   **Play Output:** Plays the finished video with your default media player directly from the app.
+*   **Custom Filename Templates:** Take full control of your output filenames with placeholders like `{filename}`, `{resolution}`, and `{codec}`.
+*   **Standalone & Portable:** Comes bundled with FFmpeg. No installation required.
+*   **Resolution Scaling:** Easily downscale videos to standard resolutions.
+*   **Stable Time Trimming:** Encode specific segments with guaranteed audio and subtitle synchronization.
+*   **Live Estimates:** See the **ETA** and **Estimated File Size** before and during encoding.
+*   **Convenient Output Handling:** Instantly **Open Folder** or **Play Output** file with one click.
 
 ## 🖼️ Screenshot
 
@@ -41,35 +37,32 @@ Sub-Zero Encoder is packed with features designed to make your workflow as smoot
 
 ### Prerequisites
 *   Windows Operating System (7, 10, 11).
-*   An **NVIDIA GPU** is required to use the GPU Acceleration mode. The application will still function in CPU mode without it.
+*   For GPU acceleration, a discrete or integrated GPU from **NVIDIA, AMD, or Intel** with up-to-date drivers is required.
 
 ### Installation & Usage
 1.  Go to the [**Releases**](https://github.com/tonzsm/Sub-Zero-Encoder/releases) page.
-2.  Download the latest `.zip` archive (e.g., `Sub-Zero-Encoder.zip`).
+2.  Download the latest `Sub-Zero-Encoder.zip` archive.
 3.  Extract the archive to a folder of your choice.
 4.  Run `Sub-Zero-Encoder.exe`.
-5.  Drag and drop your files or use the "Browse..." buttons.
-6.  Adjust your settings and click **Start**!
+5.  Drag and drop your files, adjust settings, and click **Start**!
 
 ## ⚠️ Known Issues
 
-*   **Missing Fonts:** The `.ass` subtitle format sometimes requires specific fonts to be installed on your system. If a required font is not found, FFmpeg may throw an error or substitute the font, potentially affecting the subtitle's appearance. **Please ensure you have the necessary fonts installed for best results.**
+*   **Missing Fonts:** The `.ass` subtitle format sometimes requires specific fonts to be installed on your system. If a required font is not found, FFmpeg may produce an error. Please ensure you have the necessary fonts installed for best results.
 
 ## 🗺️ Roadmap
 
-This project is actively developed. Here are some features planned for the future:
 - [ ] Batch processing / Queue system
 - [ ] Soft-subtitle support (for MKV/MP4)
 - [ ] Audio/Subtitle track selection for files with multiple tracks
-- [ ] Configuration profiles (Save/Load settings)
 
 ## ❤️ Credits
 
 This application wouldn't be possible without these amazing open-source projects:
-*   **FFmpeg:** The core of all video and audio processing.
-*   **Python:** The programming language used to build the app.
-*   **Tkinter / tkinterdnd2:** For the graphical user interface.
-*   **ffmpeg-python:** A helpful Python wrapper for FFmpeg.
+*   **FFmpeg**
+*   **Python** & **Tkinter**
+*   **ffmpeg-python**
+*   **tkinterdnd2**
 
 ## 📄 License
 

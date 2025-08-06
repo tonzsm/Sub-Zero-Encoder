@@ -4,8 +4,15 @@
 
 Sub-Zero Encoder is a user-friendly graphical interface for FFmpeg, designed to make hardsubbing subtitles a simple and powerful experience. Whether you're a professional subtitler or a hobbyist, this tool streamlines the entire process of embedding, trimming, and encoding your videos with pixel-perfect subtitles.
 
-https://github.com/tonzsm/Sub-Zero-Encoder/blob/main/Sub-Zero-Encoder-GUI.png 
-![Screenshot of a GUI Version](https://github.com/tonzsm/Sub-Zero-Encoder/blob/main/Sub-Zero-Encoder-GUI.png)
+![Screenshot of Sub-Zero Encoder](https://github.com/tonzsm/Sub-Zero-Encoder/blob/main/Sub-Zero-Encoder-GUI.png)
+
+---
+
+## 📥 Downloads
+
+The latest stable and ready-to-use version of the application is available on the **[Releases Page](https://github.com/tonzsm/Sub-Zero-Encoder/releases)**.
+
+Just download the `.zip` file from the latest release, extract it, and run the `.exe` file. No installation needed!
 
 ---
 
@@ -30,31 +37,41 @@ https://github.com/tonzsm/Sub-Zero-Encoder/blob/main/Sub-Zero-Encoder-GUI.png
 
 ---
 
-## 🛠️ Built With
-
-*   **Python 3**
-*   **Tkinter** (with `tkinterdnd2` for Drag & Drop)
-*   **FFmpeg** (must be installed and in your system's PATH)
-*   **ffmpeg-python** (for file analysis)
-
----
-
 ## 🚀 Getting Started
 
-1.  **Ensure FFmpeg is installed:** You must have a working version of FFmpeg and FFprobe installed on your system and accessible via the system's PATH.
-2.  **Install Python libraries:**
+### For Users
+1.  Go to the **[Releases Page](https://github.com/tonzsm/Sub-Zero-Encoder/releases)**.
+2.  Download the `Sub-Zero-Encoder.zip` file from the latest release.
+3.  Extract the zip file.
+4.  Run `Sub-Zero-Encoder.exe`. That's it!
+
+### For Developers
+1.  **Ensure FFmpeg is installed:** You must have a working version of FFmpeg and FFprobe in your system's PATH, **OR** place `ffmpeg.exe` and `ffprobe.exe` inside a `bin` folder in the project directory.
+2.  Clone the repository:
+    ```bash
+    git clone https://github.com/tonzsm/Sub-Zero-Encoder.git
+    ```
+3.  Install Python libraries:
     ```bash
     pip install tkinterdnd2 ffmpeg-python
     ```
-3.  **Run the application:**
+4.  Run the application:
     ```bash
     python your_script_name.py
     ```
 
 ---
 
+## 🛠️ Built With
+
+*   **Python 3**
+*   **Tkinter** (with `tkinterdnd2` for Drag & Drop)
+*   **FFmpeg**
+*   **ffmpeg-python** (for file analysis)
+*   **PyInstaller** (for building the executable)
+
+---
+
 ## 📜 License
 
 This project is licensed under the MIT License - see the `LICENSE.md` file for details.
-
-*(You can choose any license you like, MIT is a very common and permissive one.)*

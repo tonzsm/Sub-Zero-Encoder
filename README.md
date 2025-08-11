@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/tonzsm/Sub-Zero-Encoder/main/images/logo.png" width="200" alt="Sub-Zero Encoder Logo">
-</p>
-
 <h1 align="center">Sub-Zero Encoder</h1>
 
 <p align="center">
@@ -15,19 +11,25 @@
 
 ---
 
-## ✨ Features
+### 🚀 Key Features
 
-Sub-Zero Encoder is packed with features designed to make your workflow as smooth as possible.
-
-*   **Smart GPU Acceleration:** Automatically detects **NVIDIA (NVENC)**, **AMD (AMF)**, and **Intel (QSV)** GPUs to provide the best possible hardware acceleration without any configuration.
-*   **Intuitive UI:** A clean and simple graphical user interface with Drag & Drop support.
-*   **Auto-Subtitle Finder:** Automatically detects and loads matching `.ass` or `.srt` subtitle files.
-*   **Custom Filename Templates:** Take full control of your output filenames with placeholders like `{filename}`, `{resolution}`, and `{codec}`.
-*   **Standalone & Portable:** Comes bundled with FFmpeg. No installation required.
-*   **Resolution Scaling:** Easily downscale videos to standard resolutions.
-*   **Stable Time Trimming:** Encode specific segments with guaranteed audio and subtitle synchronization.
-*   **Live Estimates:** See the **ETA** and **Estimated File Size** before and during encoding.
-*   **Convenient Output Handling:** Instantly **Open Folder** or **Play Output** file with one click.
+*   **Dual Encoding Modes:**
+    *   **Quality (CRF):** Focuses on maintaining consistent visual quality. (Recommended)
+    *   **Bitrate:** Focuses on controlling the final file size.
+*   **Smart CRF Recommendations:** Automatically suggests the optimal CRF range and sets a default value based on the video's resolution (SD, 720p, 1080p, 4K).
+*   **GPU Acceleration Support:** Harness the power of NVIDIA (NVENC), AMD (AMF), and Intel (QSV) for lightning-fast encoding.
+*   **Versatile Encoding Options:**
+    *   Adjust Codec (H.264, H.265), Preset, and CRF/Bitrate.
+    *   Scale video to standard resolutions (4K, 1440p, 1080p, 720p).
+    *   Trim videos to encode only the specific segment you need.
+    *   Configure audio codec and bitrate, or simply copy the original stream.
+*   **User-Friendly Interface:**
+    *   Drag & Drop support for both video and subtitle files.
+    *   Automatically finds `.ass` or `.srt` subtitle files with matching video names.
+    *   A real-time log window to monitor FFmpeg's progress.
+*   **Customizable Output:**
+    *   Choose between saving in the same folder or a custom directory.
+    *   Use a filename template with useful placeholders like `{filename}`, `{codec}`, `{quality}`, and `{date}`.
 
 ## 🖼️ Screenshot
 
